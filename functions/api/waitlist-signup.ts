@@ -1,6 +1,7 @@
 interface Env {
   RESEND_API_KEY: string;
   RESEND_AUDIENCE_ID: string;
+  RESEND_FROM_EMAIL: string;
 }
 
 type PagesContext<TEnv> = {
@@ -117,8 +118,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     const resendKey = context.env.RESEND_API_KEY;
     const audienceId = context.env.RESEND_AUDIENCE_ID;
+    const fromEmail = context.env.RESEND_FROM_EMAIL?.trim();
 
-    if (!resendKey || !audienceId) {
+    if (!resendKey || !audienceId || !fromEmail) {
       throw new Error("Missing Resend configuration");
     }
 
@@ -170,7 +172,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Byeori <onboarding@resend.dev>",
+        from: fromEmail,
         to: [normalizedEmail],
         subject: "Thanks for joining the Byeori waitlist",
         html: emailHtml,

@@ -6,10 +6,14 @@ type TestContext = {
   env: {
     RESEND_API_KEY: string;
     RESEND_AUDIENCE_ID: string;
+    RESEND_FROM_EMAIL: string;
   };
 };
 
-const createContext = (body: Record<string, unknown>): TestContext => {
+const createContext = (
+  body: Record<string, unknown>,
+  envOverrides: Partial<TestContext["env"]> = {},
+): TestContext => {
   return {
     request: new Request("https://example.com/api/waitlist-signup", {
       method: "POST",
@@ -19,6 +23,8 @@ const createContext = (body: Record<string, unknown>): TestContext => {
     env: {
       RESEND_API_KEY: "test-key",
       RESEND_AUDIENCE_ID: "aud_test",
+      RESEND_FROM_EMAIL: "Byeori <onboarding@example.com>",
+      ...envOverrides,
     },
   };
 };
@@ -45,6 +51,10 @@ describe("waitlist-signup API", () => {
     expect(body.success).toBe(true);
     expect(body.alreadyOnWaitlist).toBe(false);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    const emailRequestInit = fetchMock.mock.calls[1]?.[1] as RequestInit | undefined;
+    const emailBody = JSON.parse(String(emailRequestInit?.body ?? "{}")) as { from?: string };
+    expect(emailBody.from).toBe("Byeori <onboarding@example.com>");
   });
 
   it("returns 200 for duplicate audience signup only if welcome email succeeds", async () => {
@@ -108,6 +118,19 @@ describe("waitlist-signup API", () => {
 
     expect(response.status).toBe(400);
     expect(body.error).toBe("Please enter a valid email address.");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 500 when required resend config is missing", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+
+    const response = await onRequestPost(
+      createContext({ email: "test@example.com" }, { RESEND_FROM_EMAIL: "   " }) as never,
+    );
+    const body = await readJson(response);
+
+    expect(response.status).toBe(500);
+    expect(body.error).toBe("Something went wrong. Please try again.");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

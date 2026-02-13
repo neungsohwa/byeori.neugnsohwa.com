@@ -53,4 +53,5 @@ pnpm test:watch   # Vitest watch mode
 - **Environment variables** (set in Cloudflare dashboard, locally in `.dev.vars`):
   - `RESEND_API_KEY` — Resend API key
   - `RESEND_AUDIENCE_ID` — Resend Audience ID for waitlist contacts
+  - `RESEND_FROM_EMAIL` — Verified sender address used in Resend email API (`"Name <email@your-domain>"`)
 - **Never use `any` type** — create proper type interfaces instead.
